@@ -35,6 +35,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define UART_BUSY 1
+#define UART_PACKET_OK 0
+#define UART_PACKET_TOO_LONG 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -64,11 +67,13 @@ static void MX_TIM15_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+void UART_Send (const char message[]);
+void drv_messageCheck(const char message[]);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// ENCODERS
 uint32_t T31pulseWidth = 0;
 uint32_t T31Rising = 0;
 uint32_t T31Tick = 0;
@@ -94,65 +99,24 @@ uint32_t T34vectSum = 0;
 uint32_t T34vect[5] = { 0 };
 
 // MOTORS - UART
-//uint8_t UART_NewMessage = 0;
-//uint8_t UART2_rxBuffer = '\000';
-//uint8_t maxString = 100;
-//char rxString[100];
-char rxChar = '\0';
-
 uint8_t UART2_rxBuffer = '\000';
+uint8_t UART_newMessage = 0;
+char rxString[100] = { '\0' };
+volatile uint8_t UART_TX_Busy = 0;
 
+// MOTORS - Motor Wheels
 Motor_Wheel MW[4];
 Motor_Wheel* pMW[4];
 
-
+// MOTORS - Linear Motors
 Linear_Motor LM[2];
 Linear_Motor* pLM[2];
 
 uint32_t linearPulse_1 = 0;
 uint32_t linearPulse_2 = 0;
 
+// INITIALIZATION FLAG
 uint8_t Init_Done = 0;
-
-void set_linear_motor(uint32_t shift, uint8_t dir)
-{
-	if (TIM_CHANNEL_STATE_GET(&htim15, TIM_CHANNEL_2) != HAL_TIM_CHANNEL_STATE_BUSY)
-	{
-		linearPulse_1 = shift;
-		// TODO: SET DIRECTION GPIO
-		HAL_TIM_PWM_Start_IT(&htim15, TIM_CHANNEL_2);
-	}
-}
-
-void memset_volatile(volatile void *s, char c, size_t n)
-{
-    volatile char *p = s;
-    while (n-- > 0) {
-        *p++ = c;
-    }
-}
-
-#define UART_BUSY 1
-
-uint8_t UART_newMessage = 0;
-
-char rxString[100] = { '\0' };
-#define UART_PACKET_OK 0
-#define UART_PACKET_TOO_LONG 1
-
-volatile uint8_t UART_TX_Busy = 0;
-void UART_Send(const char message[])
-{
-	while(UART_TX_Busy){};
-	UART_TX_Busy = 1;
-	HAL_UART_Transmit_DMA(&huart2, (uint8_t*)message, strlen(message));
-}
-
-uint8_t txBuffer[] = "test,ciao!ciao!\n";
-uint8_t rxBuffer[24];
-uint8_t rxByte;
-uint16_t rxIdx;
-uint8_t rxFlag;
 
 /* USER CODE END 0 */
 
@@ -190,12 +154,7 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  /*uint8_t my_priority = NVIC_GetPriority( USART2_IRQn );
-  uint8_t timer_priority = NVIC_GetPriority( TIM15_IRQn );
-  if (timer_priority < my_priority)
-	  {
-	  NVIC_SetPriority( TIM15_IRQn, my_priority + 1 );
-	  }*/
+
   // --------------------------------------
   // ENCODERS READING
   // --------------------------------------
@@ -204,10 +163,6 @@ int main(void)
   HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_3);
   HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_4);
   uint8_t MSG[65] = {'\0'};
-  //uint8_t number1[8] = {'\0'};
-  //uint8_t number2[8] = {'\0'};
-  //uint8_t number3[8] = {'\0'};
-  //uint8_t number4[8] = {'\0'};
   float speed1 = 0;
   float speed2 = 0;
   float speed3 = 0;
@@ -220,22 +175,13 @@ int main(void)
   // --------------------------------------
   // MOTORS CONTROL
   // --------------------------------------
-  int pulse_counter = 0;
-  int stage = 0;
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
-  //HAL_TIM_Base_Start_IT(&htim15);
-  //HAL_TIM_PWM_Start_IT(&htim15, TIM_CHANNEL_1);
-  //HAL_TIM_PWM_Start_IT(&htim15, TIM_CHANNEL_2);
-  //HAL_TIM_OnePulse_Start(&htim15, TIM_CHANNEL_2);
   __HAL_TIM_SET_COMPARE(&htim15, TIM_CHANNEL_1, 2);
   __HAL_TIM_SET_COMPARE(&htim15, TIM_CHANNEL_2, 2);
-  //HAL_TIM_Base_Start(&htim16);
-  // Serial OUT temp string
-  uint8_t info[100] = {'\0'};
 
   // SETUP
   for (int i = 0; i < 4; i++)
@@ -245,39 +191,22 @@ int main(void)
 	  motorPWM_pulse(&htim1, pMW[i], 0.0); // send zero velocities
 	  motor_break(pMW[i], 0);  // set brake to false
   }
-  //HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
 
 
   // basicly - clear all uart queues
-  //__HAL_UART_FLUSH_DRREGISTER(&huart2);
-
   HAL_UART_Receive_DMA(&huart2, &UART2_rxBuffer, 1);
-  HAL_UART_Transmit(&huart2, info, strlen(info), 100);
+  HAL_UART_Transmit(&huart2, MSG, strlen(MSG), 50);
 
-  /*__HAL_UART_FLUSH_DRREGISTER(&huart2);
-    HAL_UART_Receive_DMA(&huart2, &rxByte, 1);
-
-    HAL_UART_Transmit(&huart2, txBuffer, strlen((char*) txBuffer),100);*/
-
-  //uint8_t str[] = "Проверка передачи UART\r\n\0";
-
-  //__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 10);
-  //HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
-
-  //uint8_t UART1_rxBuffer[12] = {0};
-  //HAL_UART_Receive (&huart1, UART1_rxBuffer, 12, 5000); // read 12 bytes, 5000 ms timeout
-  //HAL_UART_Receive_IT(&huart2, &rxChar, 1);
 
   for (int i = 0; i < 2; i++)
-   {
- 	  pLM[i] = &LM[i];
- 	  linear_motor_init(pLM[i], i+1, i); // init structure
-   }
-  //linear_motor_set_target(pLM[1], 10000);
-  //linear_motor_pulse(pLM[1], &htim15, &linearPulse_1);
-  //set_linear_motor(10050, 0);
+  {
+	  pLM[i] = &LM[i];
+	  linear_motor_init(pLM[i], i+1, i); // init structure
+  }
+
+  // No incoming processing should be done before it is set
   Init_Done = 1;
-  //HAL_UART_Receive_IT(&huart2, &rxChar, 1);
+
 
   /* USER CODE END 2 */
 
@@ -285,8 +214,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //sprintf(MSG, "pls\n");
-	  //HAL_UART_Transmit(&huart2, MSG, sizeof(MSG), 30);
 
     /* USER CODE END WHILE */
 
@@ -325,7 +252,6 @@ int main(void)
 		 memset(MSG, 0, sizeof(MSG));
 		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f\n", speed1, speed2, speed3, speed4);
 		 //sprintf(MSG, "[enc] %d %d %d %d\n", T31pulseWidth, T32pulseWidth, T33pulseWidth, T34pulseWidth);
-		 //HAL_UART_Transmit(&huart2, MSG, sizeof(MSG), 30);
 		 UART_Send(MSG);
 	 }
 
@@ -371,14 +297,14 @@ int main(void)
 	// --------------------------------------
 	// MOTORS CONTROL
 	// --------------------------------------
-	 //HAL_UART_Receive_IT(&huart2, &UART2_rxBuffer, 1);
 	 if (UART_newMessage == 1)
 	 {
-
+		 // check if received string contains [drv] message and parse it
 		 drv_messageCheck(rxString);
+		 // clear received b
 		 memset(rxString, 0, sizeof(rxString));
+		 // set newMessage flag to 0 to begin new string receive
 		 UART_newMessage = 0;
-
 	 }
   }
   /* USER CODE END 3 */
@@ -726,7 +652,46 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-// --------------------------------------
+
+void UART_Send(const char message[])
+{
+	while(UART_TX_Busy){};
+	UART_TX_Busy = 1;
+	HAL_UART_Transmit_DMA(&huart2, (uint8_t*)message, strlen(message));
+}
+
+void drv_messageCheck(const char message[])
+{
+	// create a local copy of the incoming string, just it case
+	static char cmd_buf[100];
+	strcpy(cmd_buf, message);
+
+	uint8_t MSG[5] = {'\0'};
+	int arw1=0, arw2=0, arw3=0, arw4=0, motor_brk=0;
+	int turn=0;
+	sscanf(cmd_buf, "%s %d %d %d %d %d %d", &MSG, &arw1, &arw2, &arw3, &arw4, &turn, &motor_brk);
+	if (!strcmp(MSG, "[drv]")) // returns 0 if strings are equal
+	{
+		uint8_t reply[40] = {'\0'};
+		sprintf(reply, "received: %d %d %d %d %d %d \n", arw1, arw2, arw3, arw4, turn, motor_brk);
+		UART_Send(reply);
+		motorPWM_pulse(&htim1, pMW[0], arw1 );
+		motorPWM_pulse(&htim1, pMW[1], arw2 );
+		motorPWM_pulse(&htim1, pMW[2], arw3 );
+		motorPWM_pulse(&htim1, pMW[3], arw4 );
+		// Since only 1 break pin is used, it is enough to call this function for only 1 wheel
+		motor_break(pMW[0], motor_brk);
+		//motor_break(pMW[1], motor_brk);
+		//motor_break(pMW[2], motor_brk);
+		//motor_break(pMW[3], motor_brk);
+		linear_motor_set_target(pLM[0], turn);
+		linear_motor_set_target(pLM[1], turn);
+		linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
+		linear_motor_pulse(pLM[1], &htim15, &linearPulse_2);
+	}
+}
+
+// Linear Motors Timers
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
 	if (htim == &htim15)
@@ -755,8 +720,8 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 		}
 	}
 }
+
 // ENCODERS READING
-// --------------------------------------
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM3)
@@ -833,49 +798,16 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 }
 
 // --------------------------------------
-// MOTORS CONTROL
-// --------------------------------------
 
-
-void drv_messageCheck(const char message[])
-{
-	static char cmd_buf[100];
-	strcpy(cmd_buf, message);
-	uint8_t MSG[5] = {'\0'};
-	int arw1=0, arw2=0, arw3=0, arw4=0, motor_brk=0;
-	int turn=0;
-	sscanf(cmd_buf, "%s %d %d %d %d %d %d", &MSG, &arw1, &arw2, &arw3, &arw4, &turn, &motor_brk);
-	if (!strcmp(MSG, "[drv]")) // returns 0 if strings are equal
-	{
-		uint8_t reply[40] = {'\0'};
-		sprintf(reply, "received: %d %d %d %d %d %d \n", arw1, arw2, arw3, arw4, turn, motor_brk);
-		UART_Send(reply);
-		motorPWM_pulse(&htim1, pMW[0], arw1 );
-		motorPWM_pulse(&htim1, pMW[1], arw2 );
-		motorPWM_pulse(&htim1, pMW[2], arw3 );
-		motorPWM_pulse(&htim1, pMW[3], arw4 );
-		motor_break(pMW[0], motor_brk);
-		//motor_break(pMW[1], motor_brk);
-		//motor_break(pMW[2], motor_brk);
-		//motor_break(pMW[3], motor_brk);
-		linear_motor_set_target(pLM[0], turn);
-		linear_motor_set_target(pLM[1], turn);
-		linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
-		linear_motor_pulse(pLM[1], &htim15, &linearPulse_2);
-	}
-}
-
-
+// UART Processing
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart1)
 {
 	UART_TX_Busy = 0;
 }
 
-
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if (huart->Instance == USART2 && UART_newMessage != 1)
+	if (huart->Instance == USART2 && UART_newMessage != 1 && Init_Done == 1)
 	{ // Current UART
 		static short int UART2_rxindex = 0;
 		static uint8_t UART2_ErrorFlag = UART_PACKET_OK;
@@ -887,14 +819,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				rxString[UART2_rxindex] = 0;
 				UART2_rxindex = 0;
 				UART_newMessage = 1;
-				//uint8_t MSG[65] = {'\0'};
-				//sprintf(MSG, "found!\n");
-				//HAL_UART_Transmit_IT(&huart2, MSG, sizeof(MSG));
-				//UART_Send(MSG);
+				// once newMessage flag is set, received message will be
+				// processed in the next main( while{} ) cycle
 			}
 			else
 			{
-				//UART_Send ("ERROR > UART1 packet too long\n");
 				UART2_ErrorFlag = UART_PACKET_OK; // reset error state
 			}
 		}
@@ -919,54 +848,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 }
 
-/*void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
-	if (huart->Instance == USART2) {
-		__HAL_UART_FLUSH_DRREGISTER(&huart2);
-		if(rxByte == 10 || rxIdx >= 23) {
-			rxBuffer[rxIdx] = rxByte;
-			rxFlag = 1;
-			rxIdx = 0;
-		}
-		else {
-			rxBuffer[rxIdx] = rxByte;
-			rxIdx++;
-		}
-	}
-
-}*/
-
-/*volatile char line_buffer[101];
-volatile int line_valid = 0;
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	static char rx_buffer[100];   // Local holding buffer to build line
-	static int rx_index = 0;
-	if (huart->Instance->ISR & USART_ISR_RXNE) // Received character?
-  {
-	char rx = (char)(huart->Instance->RDR & 0xFF);
-
-	if ((rx == '\r') || (rx == '\n')) // Is this an end-of-line condition, either will suffice?
-	{
-	  if (rx_index != 0) // Line has some content
-	  {
-		memcpy((void *)line_buffer, rx_buffer, rx_index); // Copy to static line buffer from dynamic receive buffer
-		line_buffer[rx_index] = 0; // Add terminating NUL
-		line_valid = 1; // flag new line valid for processing
-
-		rx_index = 0; // Reset content pointer
-	  }
-	}
-	else
-	{
-	  if ((rx == '$') || (rx_index == 100)) // If resync or overflows pull back to start
-		rx_index = 0;
-
-	  rx_buffer[rx_index++] = rx; // Copy to buffer and increment
-	}
-  }
-}*/
 
 /* USER CODE END 4 */
 
