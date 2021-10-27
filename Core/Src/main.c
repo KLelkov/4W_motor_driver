@@ -48,6 +48,8 @@ TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim15;
 
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 
@@ -59,6 +61,7 @@ static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM15_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -129,6 +132,28 @@ void memset_volatile(volatile void *s, char c, size_t n)
     }
 }
 
+#define UART_BUSY 1
+
+uint8_t UART_newMessage = 0;
+
+char rxString[100] = { '\0' };
+#define UART_PACKET_OK 0
+#define UART_PACKET_TOO_LONG 1
+
+volatile uint8_t UART_TX_Busy = 0;
+void UART_Send(const char message[])
+{
+	while(UART_TX_Busy){};
+	UART_TX_Busy = 1;
+	HAL_UART_Transmit_DMA(&huart2, (uint8_t*)message, strlen(message));
+}
+
+uint8_t txBuffer[] = "test,ciao!ciao!\n";
+uint8_t rxBuffer[24];
+uint8_t rxByte;
+uint16_t rxIdx;
+uint8_t rxFlag;
+
 /* USER CODE END 0 */
 
 /**
@@ -162,9 +187,8 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM1_Init();
   MX_TIM15_Init();
-  MX_USART2_UART_Init();
-
   MX_DMA_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   /*uint8_t my_priority = NVIC_GetPriority( USART2_IRQn );
   uint8_t timer_priority = NVIC_GetPriority( TIM15_IRQn );
@@ -226,8 +250,14 @@ int main(void)
 
   // basicly - clear all uart queues
   //__HAL_UART_FLUSH_DRREGISTER(&huart2);
+
   HAL_UART_Receive_DMA(&huart2, &UART2_rxBuffer, 1);
   HAL_UART_Transmit(&huart2, info, strlen(info), 100);
+
+  /*__HAL_UART_FLUSH_DRREGISTER(&huart2);
+    HAL_UART_Receive_DMA(&huart2, &rxByte, 1);
+
+    HAL_UART_Transmit(&huart2, txBuffer, strlen((char*) txBuffer),100);*/
 
   //uint8_t str[] = "Проверка передачи UART\r\n\0";
 
@@ -295,7 +325,8 @@ int main(void)
 		 memset(MSG, 0, sizeof(MSG));
 		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f\n", speed1, speed2, speed3, speed4);
 		 //sprintf(MSG, "[enc] %d %d %d %d\n", T31pulseWidth, T32pulseWidth, T33pulseWidth, T34pulseWidth);
-		 HAL_UART_Transmit(&huart2, MSG, sizeof(MSG), 30);
+		 //HAL_UART_Transmit(&huart2, MSG, sizeof(MSG), 30);
+		 UART_Send(MSG);
 	 }
 
 	 for (int i=0; i < 4; i++)
@@ -340,7 +371,15 @@ int main(void)
 	// --------------------------------------
 	// MOTORS CONTROL
 	// --------------------------------------
-	 HAL_UART_Receive_IT(&huart2, &UART2_rxBuffer, 1);
+	 //HAL_UART_Receive_IT(&huart2, &UART2_rxBuffer, 1);
+	 if (UART_newMessage == 1)
+	 {
+
+		 drv_messageCheck(rxString);
+		 memset(rxString, 0, sizeof(rxString));
+		 UART_newMessage = 0;
+
+	 }
   }
   /* USER CODE END 3 */
 }
@@ -641,6 +680,22 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel4_5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_5_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -781,15 +836,46 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 // MOTORS CONTROL
 // --------------------------------------
 
-uint8_t UART_newMessage = 0;
 
-char rxString[100] = { '\0' };
-#define UART_PACKET_OK 0
-#define UART_PACKET_TOO_LONG 1
+void drv_messageCheck(const char message[])
+{
+	static char cmd_buf[100];
+	strcpy(cmd_buf, message);
+	uint8_t MSG[5] = {'\0'};
+	int arw1=0, arw2=0, arw3=0, arw4=0, motor_brk=0;
+	int turn=0;
+	sscanf(cmd_buf, "%s %d %d %d %d %d %d", &MSG, &arw1, &arw2, &arw3, &arw4, &turn, &motor_brk);
+	if (!strcmp(MSG, "[drv]")) // returns 0 if strings are equal
+	{
+		uint8_t reply[40] = {'\0'};
+		sprintf(reply, "received: %d %d %d %d %d %d \n", arw1, arw2, arw3, arw4, turn, motor_brk);
+		UART_Send(reply);
+		motorPWM_pulse(&htim1, pMW[0], arw1 );
+		motorPWM_pulse(&htim1, pMW[1], arw2 );
+		motorPWM_pulse(&htim1, pMW[2], arw3 );
+		motorPWM_pulse(&htim1, pMW[3], arw4 );
+		motor_break(pMW[0], motor_brk);
+		//motor_break(pMW[1], motor_brk);
+		//motor_break(pMW[2], motor_brk);
+		//motor_break(pMW[3], motor_brk);
+		linear_motor_set_target(pLM[0], turn);
+		linear_motor_set_target(pLM[1], turn);
+		linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
+		linear_motor_pulse(pLM[1], &htim15, &linearPulse_2);
+	}
+}
+
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart1)
+{
+	UART_TX_Busy = 0;
+}
+
+
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if (huart->Instance == USART2)
+	if (huart->Instance == USART2 && UART_newMessage != 1)
 	{ // Current UART
 		static short int UART2_rxindex = 0;
 		static uint8_t UART2_ErrorFlag = UART_PACKET_OK;
@@ -801,6 +887,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 				rxString[UART2_rxindex] = 0;
 				UART2_rxindex = 0;
 				UART_newMessage = 1;
+				//uint8_t MSG[65] = {'\0'};
+				//sprintf(MSG, "found!\n");
+				//HAL_UART_Transmit_IT(&huart2, MSG, sizeof(MSG));
+				//UART_Send(MSG);
 			}
 			else
 			{
@@ -826,7 +916,25 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 
 	}
+
 }
+
+/*void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+
+	if (huart->Instance == USART2) {
+		__HAL_UART_FLUSH_DRREGISTER(&huart2);
+		if(rxByte == 10 || rxIdx >= 23) {
+			rxBuffer[rxIdx] = rxByte;
+			rxFlag = 1;
+			rxIdx = 0;
+		}
+		else {
+			rxBuffer[rxIdx] = rxByte;
+			rxIdx++;
+		}
+	}
+
+}*/
 
 /*volatile char line_buffer[101];
 volatile int line_valid = 0;
