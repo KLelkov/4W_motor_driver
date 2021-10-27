@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "motor_lib.h"
 #include "linear_motor_lib.h"
+//#include "stm32f0xx_hal.h"
 
 /* USER CODE END Includes */
 
@@ -90,9 +91,13 @@ uint32_t T34vectSum = 0;
 uint32_t T34vect[5] = { 0 };
 
 // MOTORS - UART
-uint8_t rx_buffer[100] = {'\0'};
-uint8_t rxChar = '\0';
-uint8_t rxIndex = 0;
+//uint8_t UART_NewMessage = 0;
+//uint8_t UART2_rxBuffer = '\000';
+//uint8_t maxString = 100;
+//char rxString[100];
+char rxChar = '\0';
+
+uint8_t UART2_rxBuffer = '\000';
 
 Motor_Wheel MW[4];
 Motor_Wheel* pMW[4];
@@ -158,6 +163,8 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM15_Init();
   MX_USART2_UART_Init();
+
+  MX_DMA_Init();
   /* USER CODE BEGIN 2 */
   /*uint8_t my_priority = NVIC_GetPriority( USART2_IRQn );
   uint8_t timer_priority = NVIC_GetPriority( TIM15_IRQn );
@@ -219,7 +226,7 @@ int main(void)
 
   // basicly - clear all uart queues
   //__HAL_UART_FLUSH_DRREGISTER(&huart2);
-  HAL_UART_Receive_DMA(&huart2, &rxChar, 1);
+  HAL_UART_Receive_DMA(&huart2, &UART2_rxBuffer, 1);
   HAL_UART_Transmit(&huart2, info, strlen(info), 100);
 
   //uint8_t str[] = "Проверка передачи UART\r\n\0";
@@ -333,7 +340,7 @@ int main(void)
 	// --------------------------------------
 	// MOTORS CONTROL
 	// --------------------------------------
-	 HAL_UART_Receive_IT(&huart2, &rxChar, 1);
+	 HAL_UART_Receive_IT(&huart2, &UART2_rxBuffer, 1);
   }
   /* USER CODE END 3 */
 }
@@ -773,48 +780,85 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 // --------------------------------------
 // MOTORS CONTROL
 // --------------------------------------
+
+uint8_t UART_newMessage = 0;
+
+char rxString[100] = { '\0' };
+#define UART_PACKET_OK 0
+#define UART_PACKET_TOO_LONG 1
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if (huart->Instance == USART2) { // Current UART
-		rx_buffer[rxIndex++] = rxChar;    // Add data to Rx_Buffer
-		HAL_UART_Receive_IT(&huart2, &rxChar, 1);
+	if (huart->Instance == USART2)
+	{ // Current UART
+		static short int UART2_rxindex = 0;
+		static uint8_t UART2_ErrorFlag = UART_PACKET_OK;
 
-		if ((rxChar == '\n') && Init_Done == 1)
+		if (UART2_rxBuffer == '\n') // If Enter
 		{
-			uint8_t MSG[5] = {'\0'};
-			int arw1=0, arw2=0, arw3=0, arw4=0, motor_brk=0;
-		    int turn=0;
-			sscanf(rx_buffer, "%s %d %d %d %d %d %d", &MSG, &arw1, &arw2, &arw3, &arw4, &turn, &motor_brk);
-			memset(rx_buffer, 0, sizeof(rx_buffer));
-			//memset_volatile(rx_buffer, 0, sizeof(rx_buffer));
-			rxIndex = 0;
-			if (!strcmp(MSG, "[drv]")) // returns 0 if strings are equal
+			if (UART2_ErrorFlag == UART_PACKET_OK && UART2_rxindex)
 			{
-				uint8_t reply[65] = {'\0'};
-				sprintf(reply, "received: %d %d %d %d %d %d\n", arw1, arw2, arw3, arw4, turn, motor_brk);
-				HAL_UART_Transmit_IT(&huart2, reply, sizeof(reply));
-				//motorPWM_pulse(&htim1, pMW[0], ((float) arw1 / 100.0));
-				//motorPWM_pulse(&htim1, pMW[1], ((float) arw2 / 100.0));
-				//motorPWM_pulse(&htim1, pMW[2], ((float) arw3 / 100.0));
-				//motorPWM_pulse(&htim1, pMW[3], ((float) arw4 / 100.0));
-				motorPWM_pulse(&htim1, pMW[0], arw1 );
-				motorPWM_pulse(&htim1, pMW[1], arw2 );
-				motorPWM_pulse(&htim1, pMW[2], arw3 );
-				motorPWM_pulse(&htim1, pMW[3], arw4 );
-				motor_break(pMW[0], motor_brk);
-				//motor_break(pMW[1], motor_brk);
-				//motor_break(pMW[2], motor_brk);
-				//motor_break(pMW[3], motor_brk);
-				linear_motor_set_target(pLM[0], turn);
-				linear_motor_set_target(pLM[1], turn);
-				linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
-				linear_motor_pulse(pLM[1], &htim15, &linearPulse_2);
+				rxString[UART2_rxindex] = 0;
+				UART2_rxindex = 0;
+				UART_newMessage = 1;
 			}
-			//rxChar = '\0';
+			else
+			{
+				//UART_Send ("ERROR > UART1 packet too long\n");
+				UART2_ErrorFlag = UART_PACKET_OK; // reset error state
+			}
 		}
+		else
+		{
+			if (UART2_rxBuffer != '\r' && UART2_ErrorFlag == UART_PACKET_OK) // Ignore return
+			{
+				rxString[UART2_rxindex] = UART2_rxBuffer; // Add that character to the string
+				UART2_rxindex++;
+				if (UART2_rxindex >= 100) // User typing too much, we can't have commands that big
+				{
+					UART2_ErrorFlag = UART_PACKET_TOO_LONG;
+					UART2_rxindex = 0;
+					rxString[UART2_rxindex] = '\000';
+				}
+			}
+		}
+
+
 
 	}
 }
+
+/*volatile char line_buffer[101];
+volatile int line_valid = 0;
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	static char rx_buffer[100];   // Local holding buffer to build line
+	static int rx_index = 0;
+	if (huart->Instance->ISR & USART_ISR_RXNE) // Received character?
+  {
+	char rx = (char)(huart->Instance->RDR & 0xFF);
+
+	if ((rx == '\r') || (rx == '\n')) // Is this an end-of-line condition, either will suffice?
+	{
+	  if (rx_index != 0) // Line has some content
+	  {
+		memcpy((void *)line_buffer, rx_buffer, rx_index); // Copy to static line buffer from dynamic receive buffer
+		line_buffer[rx_index] = 0; // Add terminating NUL
+		line_valid = 1; // flag new line valid for processing
+
+		rx_index = 0; // Reset content pointer
+	  }
+	}
+	else
+	{
+	  if ((rx == '$') || (rx_index == 100)) // If resync or overflows pull back to start
+		rx_index = 0;
+
+	  rx_buffer[rx_index++] = rx; // Copy to buffer and increment
+	}
+  }
+}*/
 
 /* USER CODE END 4 */
 
