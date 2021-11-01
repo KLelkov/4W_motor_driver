@@ -32,11 +32,11 @@ void motor_wheel_init(Motor_Wheel *str, uint8_t motor_num)
 	// DIRECTION PIN
 	if (str->id == 1)
 	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET); // Set LOW
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET); // Set LOW
 	}
 	else if (str->id == 2)
 	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET); // Set LOW
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET); // Set LOW
 	}
 	else if (str->id == 3)
 	{
@@ -44,7 +44,7 @@ void motor_wheel_init(Motor_Wheel *str, uint8_t motor_num)
 	}
 	else
 	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET); // Set HIGH
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET); // Set HIGH
 	}
 }
 
