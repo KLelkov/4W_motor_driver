@@ -204,6 +204,10 @@ int main(void)
 	  linear_motor_init(pLM[i], i+1, i); // init structure
   }
 
+  uint32_t dist = linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
+
+
+
   // No incoming processing should be done before it is set
   Init_Done = 1;
 
@@ -250,7 +254,7 @@ int main(void)
 			 speed4 = 13850.4 / T34pulseWidth;
 		 }
 		 memset(MSG, 0, sizeof(MSG));
-		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f %d %d\n", speed1, speed2, speed3, speed4, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
+		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f %d %d %d\n", speed1, speed2, speed3, speed4, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13), dist);
 		 //sprintf(MSG, "[enc] %d %d %d %d\n", T31pulseWidth, T32pulseWidth, T33pulseWidth, T34pulseWidth);
 		 UART_Send(MSG);
 	 }
@@ -512,7 +516,7 @@ static void MX_TIM15_Init(void)
 
   /* USER CODE END TIM15_Init 1 */
   htim15.Instance = TIM15;
-  htim15.Init.Prescaler = 100-1;
+  htim15.Init.Prescaler = 160-1;
   htim15.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim15.Init.Period = 5-1;
   htim15.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
