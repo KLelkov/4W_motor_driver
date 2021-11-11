@@ -204,7 +204,7 @@ int main(void)
 	  linear_motor_init(pLM[i], i+1, i); // init structure
   }
 
-  uint32_t dist = linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
+  uint32_t dist = 0; //linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
 
 
 
@@ -297,7 +297,7 @@ int main(void)
 		 }
 	 }
 
-	 HAL_Delay(100);
+	 HAL_Delay(500);
 	// --------------------------------------
 	// MOTORS CONTROL
 	// --------------------------------------

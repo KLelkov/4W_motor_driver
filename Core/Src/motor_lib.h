@@ -49,9 +49,15 @@ void motor_wheel_init(Motor_Wheel *str, uint8_t motor_num)
 }
 
 
-void motorPWM_pulse(TIM_HandleTypeDef* timer_handle, Motor_Wheel *str, uint8_t LPU) // PWM Velocity Control
+void motorPWM_pulse(TIM_HandleTypeDef* timer_handle, Motor_Wheel *str, int LPU) // PWM Velocity Control
 {
-	uint8_t throttle = LPU;//fabs(LPU) * 100;
+
+	uint8_t throttle = abs(LPU);//fabs(LPU) * 100;
+	if (abs(LPU) > 100)
+	{
+		return;
+	}
+
 	if (str->id == 1)
 		__HAL_TIM_SET_COMPARE(timer_handle, TIM_CHANNEL_1, throttle);
 	else if (str->id == 2)
