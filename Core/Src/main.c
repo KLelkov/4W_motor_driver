@@ -250,7 +250,7 @@ int main(void)
 			 speed4 = 13850.4 / T34pulseWidth;
 		 }
 		 memset(MSG, 0, sizeof(MSG));
-		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f\n", speed1, speed2, speed3, speed4);
+		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f %d %d\n", speed1, speed2, speed3, speed4, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
 		 //sprintf(MSG, "[enc] %d %d %d %d\n", T31pulseWidth, T32pulseWidth, T33pulseWidth, T34pulseWidth);
 		 UART_Send(MSG);
 	 }
@@ -640,8 +640,14 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, DIR_LEFT_Pin|DIR_RIGHT_Pin|DIR_FRONT_Pin|DIR_REAR_Pin
                           |BREAK_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PC13 PC14 PC15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
+  /*Configure GPIO pin : PC13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PC14 PC15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -658,7 +664,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : PB7 */
   GPIO_InitStruct.Pin = GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
