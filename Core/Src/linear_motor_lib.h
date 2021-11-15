@@ -143,6 +143,11 @@ uint32_t linear_motor_calibrate(Linear_Motor *str, TIM_HandleTypeDef* timer_hand
 			{
 				distanceTraveled += stepSize;
 			}
+			if (distanceTraveled > 60000)
+			{
+				edgeReached1 = 1;
+				return 0;
+			}
 		}
 		else if (str->id == 2)
 		{

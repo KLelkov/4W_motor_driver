@@ -67,7 +67,7 @@ static void MX_TIM15_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
-void UART_Send (const char message[]);
+void UART_Send (const uint8_t message[]);
 void drv_messageCheck(const char message[]);
 /* USER CODE END PFP */
 
@@ -204,7 +204,7 @@ int main(void)
 	  linear_motor_init(pLM[i], i+1, i); // init structure
   }
 
-  uint32_t dist = 0; //linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
+  //linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
 
 
 
@@ -254,7 +254,7 @@ int main(void)
 			 speed4 = 13850.4 / T34pulseWidth;
 		 }
 		 memset(MSG, 0, sizeof(MSG));
-		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f %d %d %d\n", speed1, speed2, speed3, speed4, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13), dist);
+		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f %d %d\n", speed1, speed2, speed3, speed4, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
 		 //sprintf(MSG, "[enc] %d %d %d %d\n", T31pulseWidth, T32pulseWidth, T33pulseWidth, T34pulseWidth);
 		 UART_Send(MSG);
 	 }
@@ -297,7 +297,7 @@ int main(void)
 		 }
 	 }
 
-	 HAL_Delay(500);
+	 HAL_Delay(200);
 	// --------------------------------------
 	// MOTORS CONTROL
 	// --------------------------------------
@@ -675,7 +675,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void UART_Send(const char message[])
+void UART_Send(const uint8_t message[])
 {
 	while(UART_TX_Busy){};
 	UART_TX_Busy = 1;
