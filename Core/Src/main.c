@@ -155,6 +155,8 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_Delay(1000);
+
   // --------------------------------------
   // ENCODERS READING
   // --------------------------------------
@@ -204,7 +206,7 @@ int main(void)
 	  linear_motor_init(pLM[i], i+1, i); // init structure
   }
 
-  //linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
+  linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
 
 
 
@@ -648,12 +650,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_13;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PC14 PC15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_14|GPIO_PIN_15;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : DIR_LEFT_Pin DIR_RIGHT_Pin DIR_FRONT_Pin DIR_REAR_Pin

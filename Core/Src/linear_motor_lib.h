@@ -113,7 +113,7 @@ uint8_t linear_motor_pulse(Linear_Motor *str, TIM_HandleTypeDef* timer_handle, u
 
 uint32_t linear_motor_calibrate(Linear_Motor *str, TIM_HandleTypeDef* timer_handle, uint32_t* counter_handle)
 {
-	uint16_t stepSize = 100;
+	uint32_t stepSize = 100;
 	uint32_t distanceTraveled = 0;
 	uint8_t edgeReached1 = 0;
 	uint8_t edgeReached2 = 0;
@@ -143,11 +143,11 @@ uint32_t linear_motor_calibrate(Linear_Motor *str, TIM_HandleTypeDef* timer_hand
 			{
 				distanceTraveled += stepSize;
 			}
-			if (distanceTraveled > 60000)
-			{
-				edgeReached1 = 1;
-				return 0;
-			}
+			//if (distanceTraveled > 60000)
+			//{
+			//	edgeReached1 = 1;
+			//	return 0;
+			//}
 		}
 		else if (str->id == 2)
 		{
