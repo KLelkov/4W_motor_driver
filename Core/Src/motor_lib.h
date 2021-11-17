@@ -37,6 +37,7 @@ void motor_wheel_init(Motor_Wheel *str, uint8_t motor_num)
 	else if (str->id == 2)
 	{
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET); // Set LOW
+		str->inverse_q = 1;
 	}
 	else if (str->id == 3)
 	{
@@ -45,6 +46,7 @@ void motor_wheel_init(Motor_Wheel *str, uint8_t motor_num)
 	else
 	{
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET); // Set HIGH
+		str->inverse_q = 1;
 	}
 }
 
@@ -97,23 +99,23 @@ void motorPWM_default(TIM_HandleTypeDef* timer_handle, Motor_Wheel *str) // Send
 	  __HAL_TIM_SET_COMPARE(timer_handle, TIM_CHANNEL_4, throttle);
 };
 
-void motor_DIR(Motor_Wheel *str, const char* Direction) // Send direction change command
+void motor_DIR(Motor_Wheel *str, const uint8_t Direction) // Send direction change command
 {
-  if (Direction == FORWARD)
-	  str->dir_q = 1;
-  else if (Direction == BACKWARD)
-	  str->dir_q = 0;
-  if (str->inverse_q == 1)
-	  str->dir_q = abs(str->dir_q - 1); // sneaky inverse 1 -> 0 or 0 -> 1
+
+	str->dir_q = Direction;
+	// 0 = Forward
+	// 1 = backward
+
+
   // DIRECTION PIN
-  if (abs(str->dir_q - str->inverse_q) == 1)
+  if (str->dir_q == 1) // Backward
   {
 	 if (str->id == 1 || str->id == 3) // LEFT MOTORS
 	  	 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET); // Set LOW
 	 else // RIGHT MOTORS
 		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET); // Set HIGH
   }
-  else
+  else // Forward
   {
 	 if (str->id == 1 || str->id == 3) // LEFT MOTORS
 		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET); // Set HIGH

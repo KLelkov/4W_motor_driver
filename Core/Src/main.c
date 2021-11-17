@@ -694,15 +694,33 @@ void drv_messageCheck(const char message[])
 		uint8_t reply[40] = {'\0'};
 		sprintf(reply, "received: %d %d %d %d %d %d \n", arw1, arw2, arw3, arw4, turn, motor_brk);
 		UART_Send(reply);
+
+		// Since only 1 break pin is used, it is enough to call this function for only 1 wheel
+		motor_break(pMW[0], motor_brk);
+
+		// Direction is set separately for left and right sided wheels
+		if (arw1 < 0 && arw3 < 0)
+		{
+			motor_DIR(pMW[0], 1); // set direction to backward
+		}
+		else
+		{
+			motor_DIR(pMW[0], 0); // set direction to forward
+		}
+		if (arw2 < 0 && arw4 < 0)
+		{
+			motor_DIR(pMW[2], 1); // set direction to backward
+		}
+		else
+		{
+			motor_DIR(pMW[2], 0); // set direction to forward
+		}
+
 		motorPWM_pulse(&htim1, pMW[0], arw1 );
 		motorPWM_pulse(&htim1, pMW[1], arw2 );
 		motorPWM_pulse(&htim1, pMW[2], arw3 );
 		motorPWM_pulse(&htim1, pMW[3], arw4 );
-		// Since only 1 break pin is used, it is enough to call this function for only 1 wheel
-		motor_break(pMW[0], motor_brk);
-		//motor_break(pMW[1], motor_brk);
-		//motor_break(pMW[2], motor_brk);
-		//motor_break(pMW[3], motor_brk);
+
 		linear_motor_set_target(pLM[0], turn);
 		linear_motor_set_target(pLM[1], turn);
 		linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
