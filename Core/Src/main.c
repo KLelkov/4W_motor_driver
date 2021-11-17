@@ -207,6 +207,7 @@ int main(void)
   }
 
   linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
+  linear_motor_calibrate(pLM[1], &htim15, &linearPulse_2);
 
 
 

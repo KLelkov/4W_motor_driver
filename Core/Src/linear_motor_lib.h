@@ -131,10 +131,6 @@ uint32_t linear_motor_calibrate(Linear_Motor *str, TIM_HandleTypeDef* timer_hand
 		if (str->id == 1)
 		{
 			HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_1);
-			//while(TIM_CHANNEL_STATE_GET(timer_handle, TIM_CHANNEL_1) == HAL_TIM_CHANNEL_STATE_BUSY)
-			//{
-
-			//}
 			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7) == 0)
 			{
 				edgeReached1 = 1;
@@ -143,68 +139,42 @@ uint32_t linear_motor_calibrate(Linear_Motor *str, TIM_HandleTypeDef* timer_hand
 			{
 				distanceTraveled += stepSize;
 			}
-			//if (distanceTraveled > 60000)
-			//{
-			//	edgeReached1 = 1;
-			//	return 0;
-			//}
+			// TODO: add timeout
 		}
 		else if (str->id == 2)
 		{
 			HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_2);
-		}
-
-	}
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_RESET); // Set LOW
-	*counter_handle = 9300;
-	HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_1);
-	str->current_position = 0;
-	return distanceTraveled;
-	/*distanceTraveled = 0;
-	if (str->id == 1)
-	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_RESET); // Set HIGH
-	}
-	else if (str->id == 2)
-	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET); // Set HIGH
-	}
-	while (edgeReached2 == 0)
-	{
-		*counter_handle = stepSize;
-		if (str->id == 1)
-		{
-			HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_1);
-			//while(TIM_CHANNEL_STATE_GET(timer_handle, TIM_CHANNEL_1) == HAL_TIM_CHANNEL_STATE_BUSY)
-			//{
-
-			//}
 			if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 0)
 			{
-				edgeReached2 = 1;
+				edgeReached1 = 1;
 			}
 			else
 			{
 				distanceTraveled += stepSize;
 			}
-		}
-		else if (str->id == 2)
-		{
-			HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_2);
+			// TODO: add timeout
 		}
 
 	}
-
-
 	if (str->id == 1)
 	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_SET); // Set HIGH
+		// Change direction of the front motor
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_RESET); // Set LOW
+		*counter_handle = 9300;
+		HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_1);
+		str->current_position = 0;
+		return distanceTraveled;
 	}
 	else if (str->id == 2)
 	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET); // Set HIGH
+		// Change direction of the rear motor
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET); // Set LOW
+		*counter_handle = 9300;
+		HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_2);
+		str->current_position = 0;
+		return distanceTraveled;
 	}
-	*counter_handle = (uint32_t) (distanceTraveled / 2);
-	HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_1); */
+	return 0;
+
 }
 
