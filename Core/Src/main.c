@@ -709,11 +709,11 @@ void drv_messageCheck(const char message[])
 		}
 		if (arw2 < 0 && arw4 < 0)
 		{
-			motor_DIR(pMW[2], 1); // set direction to backward
+			motor_DIR(pMW[1], 1); // set direction to backward
 		}
 		else
 		{
-			motor_DIR(pMW[2], 0); // set direction to forward
+			motor_DIR(pMW[1], 0); // set direction to forward
 		}
 
 		motorPWM_pulse(&htim1, pMW[0], arw1 );
