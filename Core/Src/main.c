@@ -206,8 +206,7 @@ int main(void)
 	  linear_motor_init(pLM[i], i+1, i); // init structure
   }
 
-  linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
-  linear_motor_calibrate(pLM[1], &htim15, &linearPulse_2);
+
 
 
 
@@ -308,6 +307,7 @@ int main(void)
 	 {
 		 // check if received string contains [drv] message and parse it
 		 drv_messageCheck(rxString);
+		 cal_messageCheck(rxString);
 		 // clear received b
 		 memset(rxString, 0, sizeof(rxString));
 		 // set newMessage flag to 0 to begin new string receive
@@ -725,6 +725,23 @@ void drv_messageCheck(const char message[])
 		linear_motor_set_target(pLM[1], turn);
 		linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
 		linear_motor_pulse(pLM[1], &htim15, &linearPulse_2);
+	}
+}
+
+void cal_messageCheck(const char message[])
+{
+	// create a local copy of the incoming string, just it case
+	static char cmd_buf[100];
+	strcpy(cmd_buf, message);
+
+	uint8_t MSG[5] = {'\0'};
+	sscanf(cmd_buf, "%s", &MSG);
+	if (!strcmp(MSG, "[cal]")) // returns 0 if strings are equal
+	{
+		uint8_t reply[] = "received calibration command\n";
+		UART_Send(reply);
+		linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
+		linear_motor_calibrate(pLM[1], &htim15, &linearPulse_2);
 	}
 }
 

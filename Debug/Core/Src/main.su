@@ -23,8 +23,9 @@ main.c:618:13:MX_DMA_Init	16	static
 main.c:636:13:MX_GPIO_Init	56	static
 main.c:675:6:UART_Send	16	static
 main.c:682:6:drv_messageCheck	128	static
-main.c:732:6:HAL_TIM_PWM_PulseFinishedCallback	16	static
-main.c:762:6:HAL_TIM_IC_CaptureCallback	32	static
-main.c:840:6:HAL_UART_TxCpltCallback	16	static
-main.c:845:6:HAL_UART_RxCpltCallback	16	static
-main.c:896:6:Error_Handler	8	static,ignoring_inline_asm
+main.c:731:6:cal_messageCheck	64	static
+main.c:749:6:HAL_TIM_PWM_PulseFinishedCallback	16	static
+main.c:779:6:HAL_TIM_IC_CaptureCallback	32	static
+main.c:857:6:HAL_UART_TxCpltCallback	16	static
+main.c:862:6:HAL_UART_RxCpltCallback	16	static
+main.c:913:6:Error_Handler	8	static,ignoring_inline_asm
