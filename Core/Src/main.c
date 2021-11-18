@@ -69,6 +69,8 @@ static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void UART_Send (const uint8_t message[]);
 void drv_messageCheck(const char message[]);
+void cal_messageCheck(const char message[]);
+void calculate_angles(float *frontAngle, float *rearAngle);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -169,6 +171,8 @@ int main(void)
   float speed2 = 0;
   float speed3 = 0;
   float speed4 = 0;
+  float gamma1 = 0;
+  float gamma2 = 0;
   uint8_t cycleCounter = 0;
 
   uint32_t sumVect = 0.0;
@@ -255,9 +259,14 @@ int main(void)
 		 {
 			 speed4 = 13850.4 / T34pulseWidth;
 		 }
+		 calculate_angles(&gamma1, &gamma2);
 		 memset(MSG, 0, sizeof(MSG));
-		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f %d %d\n", speed1, speed2, speed3, speed4, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
+		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f %.2f %.2f\n", speed1, speed2, speed3, speed4, gamma1, gamma2);
 		 //sprintf(MSG, "[enc] %d %d %d %d\n", T31pulseWidth, T32pulseWidth, T33pulseWidth, T34pulseWidth);
+		 UART_Send(MSG);
+
+		 memset(MSG, 0, sizeof(MSG));
+		 sprintf(MSG, "status: %d %d\n", HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
 		 UART_Send(MSG);
 	 }
 
@@ -299,7 +308,7 @@ int main(void)
 		 }
 	 }
 
-	 HAL_Delay(200);
+	 HAL_Delay(100);
 	// --------------------------------------
 	// MOTORS CONTROL
 	// --------------------------------------
@@ -721,6 +730,7 @@ void drv_messageCheck(const char message[])
 		motorPWM_pulse(&htim1, pMW[2], arw3 );
 		motorPWM_pulse(&htim1, pMW[3], arw4 );
 
+		// Positive turn direction is RIGHT
 		linear_motor_set_target(pLM[0], turn);
 		linear_motor_set_target(pLM[1], turn);
 		linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
@@ -743,6 +753,20 @@ void cal_messageCheck(const char message[])
 		linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
 		linear_motor_calibrate(pLM[1], &htim15, &linearPulse_2);
 	}
+}
+
+void calculate_angles(float *frontAngle, float *rearAngle)
+{
+    // Positive turn direction is RIGHT
+	int32_t posFront = linear_motor_get_position(pLM[0]);
+	int32_t posRear = linear_motor_get_position(pLM[1]);
+	float angle1 =  -3.6130536130536e-08 * posFront*posFront - 0.00406363636363636*posFront - 0.320512820512822;
+	float angle2 =   1.0955710955711e-07 * posFront*posFront - 0.00375454545454545*posFront + 0.177156177156175;
+	float angle3 =   6.06060606060604e-08 * posFront*posRear + 0.00415454545454545*posRear + 4.34848484848485;
+	float angle4 =  -1.2004662004662e-07 * posFront*posRear + 0.00390909090909091*posRear + 0.0641025641025652;
+	*frontAngle = (angle1 + angle2) / 2;
+	*rearAngle = (angle3 + angle4) / 2;
+
 }
 
 // Linear Motors Timers
