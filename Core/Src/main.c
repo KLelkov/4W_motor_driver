@@ -71,6 +71,7 @@ void UART_Send (const uint8_t message[]);
 void drv_messageCheck(const char message[]);
 void cal_messageCheck(const char message[]);
 void calculate_angles(float *frontAngle, float *rearAngle);
+void calculate_pulses(int32_t frontAngle, int32_t rearAngle);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -265,9 +266,9 @@ int main(void)
 		 //sprintf(MSG, "[enc] %d %d %d %d\n", T31pulseWidth, T32pulseWidth, T33pulseWidth, T34pulseWidth);
 		 UART_Send(MSG);
 
-		 memset(MSG, 0, sizeof(MSG));
-		 sprintf(MSG, "status: %d %d\n", HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
-		 UART_Send(MSG);
+		 //memset(MSG, 0, sizeof(MSG));
+		 //sprintf(MSG, "status: %d %d\n", HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
+		 //UART_Send(MSG);
 	 }
 
 	 for (int i=0; i < 4; i++)
@@ -308,11 +309,11 @@ int main(void)
 		 }
 	 }
 
-	 HAL_Delay(100);
+	 HAL_Delay(50);
 	// --------------------------------------
 	// MOTORS CONTROL
 	// --------------------------------------
-	 if (UART_newMessage == 1)
+	 if ((UART_newMessage == 1) && (cycleCounter % 2 == 0))
 	 {
 		 // check if received string contains [drv] message and parse it
 		 drv_messageCheck(rxString);
@@ -696,7 +697,7 @@ void drv_messageCheck(const char message[])
 
 	uint8_t MSG[5] = {'\0'};
 	int arw1=0, arw2=0, arw3=0, arw4=0, motor_brk=0;
-	int turn=0;
+	int turn = 0;
 	sscanf(cmd_buf, "%s %d %d %d %d %d %d", &MSG, &arw1, &arw2, &arw3, &arw4, &turn, &motor_brk);
 	if (!strcmp(MSG, "[drv]")) // returns 0 if strings are equal
 	{
@@ -731,10 +732,15 @@ void drv_messageCheck(const char message[])
 		motorPWM_pulse(&htim1, pMW[3], arw4 );
 
 		// Positive turn direction is RIGHT
-		linear_motor_set_target(pLM[0], turn);
-		linear_motor_set_target(pLM[1], turn);
-		linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
-		linear_motor_pulse(pLM[1], &htim15, &linearPulse_2);
+		if (abs(turn) > 30)
+		{
+			turn = turn / abs(turn) * 30;
+		}
+		calculate_pulses(turn, -turn);
+		//linear_motor_set_target(pLM[0], turn);
+		//linear_motor_set_target(pLM[1], turn);
+		//linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
+		//linear_motor_pulse(pLM[1], &htim15, &linearPulse_2);
 	}
 }
 
@@ -760,13 +766,29 @@ void calculate_angles(float *frontAngle, float *rearAngle)
     // Positive turn direction is RIGHT
 	int32_t posFront = linear_motor_get_position(pLM[0]);
 	int32_t posRear = linear_motor_get_position(pLM[1]);
-	float angle1 =  -3.6130536130536e-08 * posFront*posFront - 0.00406363636363636*posFront - 0.320512820512822;
-	float angle2 =   1.0955710955711e-07 * posFront*posFront - 0.00375454545454545*posFront + 0.177156177156175;
-	float angle3 =   6.06060606060604e-08 * posFront*posRear + 0.00415454545454545*posRear + 4.34848484848485;
-	float angle4 =  -1.2004662004662e-07 * posFront*posRear + 0.00390909090909091*posRear + 0.0641025641025652;
+	float angle1 =  -3.6131e-08 * posFront*posFront - 0.0041*posFront - 0.3205;
+	float angle2 =   1.0956e-07 * posFront*posFront - 0.0038*posFront + 0.1772;
+	float angle3 =   -6.9930e-08 * posFront*posRear + 0.0041*posRear + 0.0629;
+	float angle4 =  -1.2005e-07 * posFront*posRear + 0.0039*posRear + 0.0641;
 	*frontAngle = (angle1 + angle2) / 2;
 	*rearAngle = (angle3 + angle4) / 2;
+	*frontAngle = (posFront - 145.1114) / (-255.5008);
+	*rearAngle = (posRear - 394.3129) / (247.7792);
+}
 
+void calculate_pulses(int32_t frontAngle, int32_t rearAngle)
+{
+    // Positive turn direction is RIGHT
+	//int32_t posFront = linear_motor_get_position(pLM[0]);
+	//int32_t posRear = linear_motor_get_position(pLM[1]);
+	int32_t pulses_front = -255.5008 * frontAngle + 145.1114;
+	int32_t pulses_rear = 247.7792 * rearAngle + 394.3129;
+
+	// Positive turn direction is RIGHT
+	linear_motor_set_target(pLM[0], pulses_front);
+	linear_motor_set_target(pLM[1], pulses_rear);
+	linear_motor_pulse(pLM[0], &htim15, &linearPulse_1);
+	linear_motor_pulse(pLM[1], &htim15, &linearPulse_2);
 }
 
 // Linear Motors Timers
