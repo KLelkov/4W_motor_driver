@@ -246,19 +246,19 @@ int main(void)
 
 		 if (T31pulseWidth < 30000 && T31pulseWidth != 0)
 		 {
-			 speed1 = 13850.4 / T31pulseWidth;
+			 speed1 = 13900 / T31pulseWidth;
 		 }
 		 if (T32pulseWidth < 30000 && T32pulseWidth != 0)
 		 {
-			 speed2 = 13850.4 / T32pulseWidth;
+			 speed2 = 13900 / T32pulseWidth;
 		 }
 		 if (T33pulseWidth < 30000 && T33pulseWidth != 0)
 		 {
-			 speed3 = 13850.4 / T33pulseWidth;
+			 speed3 = 13900 / T33pulseWidth;
 		 }
 		 if (T34pulseWidth < 30000 && T34pulseWidth != 0)
 		 {
-			 speed4 = 13850.4 / T34pulseWidth;
+			 speed4 = 13900 / T34pulseWidth;
 		 }
 		 calculate_angles(&gamma1, &gamma2);
 		 memset(MSG, 0, sizeof(MSG));
