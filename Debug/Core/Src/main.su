@@ -13,7 +13,7 @@ linear_motor_lib.h:40:9:linear_motor_get_position	16	static
 linear_motor_lib.h:46:6:linear_motor_set_direction	16	static
 linear_motor_lib.h:58:9:linear_motor_pulse	32	static
 linear_motor_lib.h:114:10:linear_motor_calibrate	48	static
-main.c:130:5:main	232	static
+main.c:130:5:main	296	static
 main.c:334:6:SystemClock_Config	80	static
 main.c:369:13:MX_TIM1_Init	96	static
 main.c:456:13:MX_TIM3_Init	32	static
@@ -24,10 +24,10 @@ main.c:646:13:MX_GPIO_Init	56	static
 main.c:685:6:UART_Send	16	static
 main.c:692:6:drv_messageCheck	128	static
 main.c:747:6:cal_messageCheck	64	static
-main.c:764:6:calculate_angles	48	static
-main.c:779:6:calculate_pulses	24	static
-main.c:795:6:HAL_TIM_PWM_PulseFinishedCallback	16	static
-main.c:825:6:HAL_TIM_IC_CaptureCallback	32	static
-main.c:903:6:HAL_UART_TxCpltCallback	16	static
-main.c:908:6:HAL_UART_RxCpltCallback	16	static
-main.c:959:6:Error_Handler	8	static,ignoring_inline_asm
+main.c:764:6:calculate_angles	24	static
+main.c:786:6:calculate_pulses	24	static
+main.c:808:6:HAL_TIM_PWM_PulseFinishedCallback	16	static
+main.c:838:6:HAL_TIM_IC_CaptureCallback	32	static
+main.c:916:6:HAL_UART_TxCpltCallback	16	static
+main.c:921:6:HAL_UART_RxCpltCallback	16	static
+main.c:972:6:Error_Handler	8	static,ignoring_inline_asm

@@ -169,7 +169,7 @@ uint32_t linear_motor_calibrate(Linear_Motor *str, TIM_HandleTypeDef* timer_hand
 	{
 		// Change direction of the rear motor
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET); // Set LOW
-		*counter_handle = 9300;
+		*counter_handle = 9000;
 		HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_2);
 		str->current_position = 0;
 		return distanceTraveled;

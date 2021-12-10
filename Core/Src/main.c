@@ -732,9 +732,9 @@ void drv_messageCheck(const char message[])
 		motorPWM_pulse(&htim1, pMW[3], arw4 );
 
 		// Positive turn direction is RIGHT
-		if (abs(turn) > 30)
+		if (abs(turn) > 25)
 		{
-			turn = turn / abs(turn) * 30;
+			turn = turn / abs(turn) * 25;
 		}
 		calculate_pulses(turn, -turn);
 		//linear_motor_set_target(pLM[0], turn);
@@ -766,23 +766,36 @@ void calculate_angles(float *frontAngle, float *rearAngle)
     // Positive turn direction is RIGHT
 	int32_t posFront = linear_motor_get_position(pLM[0]);
 	int32_t posRear = linear_motor_get_position(pLM[1]);
-	float angle1 =  -3.6131e-08 * posFront*posFront - 0.0041*posFront - 0.3205;
-	float angle2 =   1.0956e-07 * posFront*posFront - 0.0038*posFront + 0.1772;
-	float angle3 =   -6.9930e-08 * posFront*posRear + 0.0041*posRear + 0.0629;
-	float angle4 =  -1.2005e-07 * posFront*posRear + 0.0039*posRear + 0.0641;
-	*frontAngle = (angle1 + angle2) / 2;
-	*rearAngle = (angle3 + angle4) / 2;
-	*frontAngle = (posFront - 145.1114) / (-255.5008);
-	*rearAngle = (posRear - 394.3129) / (247.7792);
+
+	*frontAngle = round((posFront - 75.5498) / (- 253.6124));
+	if (posRear > 0)
+	{
+		*rearAngle = round((posRear + 159.8128) / (242.2376));
+	}
+	else if (posRear < 0)
+	{
+		*rearAngle = round((posRear + 332.1803) / (314.4046));
+	}
+	if (posRear == 0)
+	{
+		*rearAngle = 0;
+	}
+
 }
 
 void calculate_pulses(int32_t frontAngle, int32_t rearAngle)
 {
     // Positive turn direction is RIGHT
-	//int32_t posFront = linear_motor_get_position(pLM[0]);
-	//int32_t posRear = linear_motor_get_position(pLM[1]);
-	int32_t pulses_front = -255.5008 * frontAngle + 145.1114;
-	int32_t pulses_rear = 247.7792 * rearAngle + 394.3129;
+	int32_t pulses_front = -253.6124 * frontAngle + 75.5498;
+	int32_t pulses_rear = 0;
+	if (rearAngle > 0)
+	{
+		pulses_rear = 242.2376 * rearAngle - 159.8128;
+	}
+	else if (rearAngle < 0)
+	{
+		pulses_rear = 314.4046 * rearAngle - 332.1803;
+	}
 
 	// Positive turn direction is RIGHT
 	linear_motor_set_target(pLM[0], pulses_front);
