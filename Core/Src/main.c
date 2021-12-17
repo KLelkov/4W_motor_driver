@@ -263,7 +263,7 @@ int main(void)
 		 calculate_angles(&gamma1, &gamma2);
 		 memset(MSG, 0, sizeof(MSG));
 		 sprintf(MSG, "[enc] %.2f %.2f %.2f %.2f %.2f %.2f\n", speed1, speed2, speed3, speed4, gamma1, gamma2);
-		 //sprintf(MSG, "[enc] %d %d %d %d\n", T31pulseWidth, T32pulseWidth, T33pulseWidth, T34pulseWidth);
+		 //sprintf(MSG, "[enc] %d %d %d %d %d %d\n", T31pulseWidth, T32pulseWidth, T33pulseWidth, T34pulseWidth, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7), HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
 		 UART_Send(MSG);
 
 		 //memset(MSG, 0, sizeof(MSG));
