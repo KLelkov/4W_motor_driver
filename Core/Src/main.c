@@ -756,8 +756,16 @@ void cal_messageCheck(const char message[])
 	{
 		uint8_t reply[] = "received calibration command\n";
 		UART_Send(reply);
-		linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
-		linear_motor_calibrate(pLM[1], &htim15, &linearPulse_2);
+		uint32_t flag = linear_motor_calibrate(pLM[0], &htim15, &linearPulse_1);
+		if (flag == 0)
+		{
+			UART_Send("Front motor calibration timed out! Check for mechanical problems and repeat calibration.");
+		}
+		flag = linear_motor_calibrate(pLM[1], &htim15, &linearPulse_2);
+		if (flag == 0)
+		{
+			UART_Send("Rear motor calibration timed out! Check for mechanical problems and repeat calibration.");
+		}
 	}
 }
 

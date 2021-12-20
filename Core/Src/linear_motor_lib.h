@@ -117,7 +117,7 @@ uint32_t linear_motor_calibrate(Linear_Motor *str, TIM_HandleTypeDef* timer_hand
 	uint32_t distanceTraveled = 0;
 	uint8_t edgeReached1 = 0;
 	uint8_t edgeReached2 = 0;
-	uint32_t hard_limit = 20000;
+	uint32_t hard_limit = 12000;
 	uint32_t cnt = 0;
 	if (str->id == 1)
 	{
