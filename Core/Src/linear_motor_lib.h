@@ -148,23 +148,23 @@ uint32_t linear_motor_calibrate(Linear_Motor *str, TIM_HandleTypeDef* timer_hand
 			}
 			// TODO: add timeout
 		}
-		else if (str->id == 2)
-		{
-			while((TIM_CHANNEL_STATE_GET(timer_handle, TIM_CHANNEL_2) == HAL_TIM_CHANNEL_STATE_BUSY))
-			{
-
-			}
-			HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_2);
-			if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 0)
-			{
-				edgeReached1 = 1;
-			}
-			else
-			{
-				distanceTraveled += stepSize;
-			}
-			// TODO: add timeout
-		}
+//		else if (str->id == 2)
+//		{
+//			while((TIM_CHANNEL_STATE_GET(timer_handle, TIM_CHANNEL_2) == HAL_TIM_CHANNEL_STATE_BUSY))
+//			{
+//
+//			}
+//			HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_2);
+//			if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 0)
+//			{
+//				edgeReached1 = 1;
+//			}
+//			else
+//			{
+//				distanceTraveled += stepSize;
+//			}
+//			// TODO: add timeout
+//		}
 		if (distanceTraveled > hard_limit)
 		{
 			edgeReached1 = 1;
@@ -181,15 +181,15 @@ uint32_t linear_motor_calibrate(Linear_Motor *str, TIM_HandleTypeDef* timer_hand
 		str->current_position = 0;
 		return distanceTraveled;
 	}
-	else if (str->id == 2)
-	{
-		// Change direction of the rear motor
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET); // Set LOW
-		*counter_handle = 9600;
-		HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_2);
-		str->current_position = 0;
-		return distanceTraveled;
-	}
+//	else if (str->id == 2)
+//	{
+//		// Change direction of the rear motor
+//		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET); // Set LOW
+//		*counter_handle = 9600;
+//		HAL_TIM_PWM_Start_IT(timer_handle, TIM_CHANNEL_2);
+//		str->current_position = 0;
+//		return distanceTraveled;
+//	}
 	return 0;
 
 }
